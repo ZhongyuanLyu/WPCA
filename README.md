@@ -112,7 +112,7 @@ Rscript scripts/Table2.R
 Rscript scripts/Table5.R
 ```
 
-This repository intentionally does not rely on a `run_all` script. The main replication workflow is to run the individual script corresponding to the figure or table of interest.
+The main replication workflow is to run the individual script corresponding to the figure or table of interest.
 
 ## Optional Arguments
 
