@@ -54,10 +54,13 @@ p_qq <- plot_qq(dist_mat[1, ], "Normal Q-Q Plot", "Sample Quantiles")
 p_hist <- plot_hist_standardized(dist_mat[1, ], "Histogram of Factor Errors", "Estimation Error")
 
 fig_dir <- get_output_dir(repo_root, "figs")
+table_dir <- get_output_dir(repo_root, "tables")
 file_qq <- file.path(fig_dir, "sim_inf_N100_T500.png")
 file_hist <- file.path(fig_dir, "sim_inf_N100_T500_hist.png")
+summary_file <- file.path(table_dir, "Figure6_factor_error_summary.csv")
 
 ggplot2::ggsave(file_qq, p_qq, width = 6, height = 6, dpi = 300)
 ggplot2::ggsave(file_hist, p_hist, width = 6, height = 6, dpi = 300)
+utils::write.csv(summarize_normalized_coordinate(dist_mat, "WPCA"), summary_file, row.names = FALSE)
 
-report_saved_files(c(file_qq, file_hist))
+report_saved_files(c(file_qq, file_hist, summary_file))

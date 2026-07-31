@@ -50,14 +50,17 @@ seed <- get_int_arg(args, 2, 123L)
 set.seed(seed)
 dist_mat <- simulate_loading_distribution(N = 100L, Times = 800L, rho = 0.6, gamma = 0, N_rep = n_rep)
 
-p_qq <- plot_qq(dist_mat[3, ], "Normal Q-Q Plot", "Sample Quantiles")
-p_hist <- plot_hist_standardized(dist_mat[3, ], "Histogram of Loading Errors", "Estimation Error")
+p_qq <- plot_qq(dist_mat[1, ], "Normal Q-Q Plot", "Sample Quantiles")
+p_hist <- plot_hist_standardized(dist_mat[1, ], "Histogram of Loading Errors", "Estimation Error")
 
 fig_dir <- get_output_dir(repo_root, "figs")
+table_dir <- get_output_dir(repo_root, "tables")
 file_qq <- file.path(fig_dir, "sim_inf_L_N100_T800.png")
 file_hist <- file.path(fig_dir, "sim_inf_L_N100_T800_hist.png")
+summary_file <- file.path(table_dir, "Figure4_loading_error_summary.csv")
 
 ggplot2::ggsave(file_qq, p_qq, width = 6, height = 6, dpi = 300)
 ggplot2::ggsave(file_hist, p_hist, width = 6, height = 6, dpi = 300)
+utils::write.csv(summarize_normalized_coordinate(dist_mat, "WPCA"), summary_file, row.names = FALSE)
 
-report_saved_files(c(file_qq, file_hist))
+report_saved_files(c(file_qq, file_hist, summary_file))

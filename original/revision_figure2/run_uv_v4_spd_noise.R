@@ -47,9 +47,9 @@ draw_iid_matrix <- function(nr, nc, dist, df = 5L) {
   stop("Unknown distribution")
 }
 
-# simulation_est.R style metric scaling
-subspace_error_simest <- function(Uhat, Utrue, r) {
-  sqrt(sum((Uhat %*% t(Uhat) - Utrue %*% t(Utrue))^2) / sqrt(r))
+# Frobenius distance between the two projection matrices
+subspace_error <- function(Uhat, Utrue) {
+  sqrt(sum((Uhat %*% t(Uhat) - Utrue %*% t(Utrue))^2))
 }
 
 VAR1_sim <- function(B0, Phi, n, sigvare, burn_in = 50L) {
@@ -67,7 +67,8 @@ make_q_lag1 <- function(T) {
   if (T < 2) stop("T must be >= 2")
   Q <- matrix(0, nrow = T, ncol = T)
   idx <- 1:(T - 1)
-  Q[cbind(idx, idx + 1)] <- 1 / (T - 1)
+  Q[cbind(idx, idx + 1)] <- 1 / (2 * (T - 1))
+  Q[cbind(idx + 1, idx)] <- 1 / (2 * (T - 1))
   Q
 }
 
@@ -77,7 +78,8 @@ fit_pca_u <- function(X, r) {
 
 fit_wpca_lag1_u <- function(X, r) {
   Q <- make_q_lag1(ncol(X))
-  svd(X %*% Q %*% t(X), nu = r, nv = 0)$u
+  XQXt <- X %*% Q %*% t(X)
+  eigen((XQXt + t(XQXt)) / 2, symmetric = TRUE)$vectors[, seq_len(r), drop = FALSE]
 }
 
 fit_v_from_u <- function(X, Uhat, r) {
@@ -159,12 +161,9 @@ simulate_panel <- function(cfg, T) {
   N <- cfg$N
   r <- cfg$r
 
-  # simulation_est.R-aligned factor DGP
+  # Factor DGP with a positive lag-1 signal matrix
   B0 <- matrix(0, nrow = r)
-  diagPhivec <- rep(cfg$phi_level, r)
-  O1 <- svd(matrix(rnorm(r * r), nrow = r))$u
-  O2 <- svd(matrix(rnorm(r * r), nrow = r))$u
-  Phi <- O1 %*% diag(diagPhivec, nrow = r) %*% t(O2)
+  Phi <- diag(cfg$phi_level, r)
   sigvare <- diag(1, r, r) - Phi %*% t(Phi)
   sigvare <- (sigvare + t(sigvare)) / 2
   min_ev <- min(eigen(sigvare, symmetric = TRUE, only.values = TRUE)$values)
@@ -172,6 +171,14 @@ simulate_panel <- function(cfg, T) {
     sigvare <- sigvare + diag(abs(min_ev) + 1e-6, r)
   }
   Fmat <- VAR1_sim(B0, Phi, T, sigvare, burn_in = 50L)
+  signal_eigenvalues <- eigen(
+    t(Fmat) %*% make_q_lag1(T) %*% Fmat,
+    symmetric = TRUE,
+    only.values = TRUE
+  )$values
+  if (min(signal_eigenvalues) <= 0) {
+    stop("The simulated lag-1 signal matrix is not positive definite.")
+  }
 
   # simulation_est.R-aligned loading DGP
   svd_L <- svd(matrix(rnorm(N * r), nrow = N))
@@ -199,14 +206,14 @@ run_single_rep <- function(cfg, T) {
   rbind(
     data.frame(
       method = "PCA",
-      u_error = subspace_error_simest(U_pca, dat$U_true, cfg$r),
-      v_error = subspace_error_simest(V_pca, dat$V_true, cfg$r),
+      u_error = subspace_error(U_pca, dat$U_true),
+      v_error = subspace_error(V_pca, dat$V_true),
       stringsAsFactors = FALSE
     ),
     data.frame(
       method = "WPCAlag1",
-      u_error = subspace_error_simest(U_wp, dat$U_true, cfg$r),
-      v_error = subspace_error_simest(V_wp, dat$V_true, cfg$r),
+      u_error = subspace_error(U_wp, dat$U_true),
+      v_error = subspace_error(V_wp, dat$V_true),
       stringsAsFactors = FALSE
     )
   )

@@ -1,11 +1,3 @@
-if (!requireNamespace("matrixNormal", quietly = TRUE)) {
-  warning("Package 'matrixNormal' is not installed. Functions requiring it may be unavailable.")
-}
-if (!requireNamespace("readr", quietly = TRUE)) {
-  warning("Package 'readr' is not installed. FRED data-loading helpers will not run until it is installed.")
-}
-
-
 fredqd <- function(file = "", date_start = NULL, date_end = NULL, transform = TRUE) {
   # Error checking
   if (!is.logical(transform))
@@ -155,7 +147,7 @@ fredqd <- function(file = "", date_start = NULL, date_end = NULL, transform = TR
 
 procrustes_align <- function(A, B) {
   sv <- svd(t(A) %*% B)
-  R  <- sv$v %*% t(sv$u)
+  R  <- sv$u %*% t(sv$v)
 }
 
 
@@ -172,7 +164,7 @@ compute_rotation_and_covariance_L <- function(U_hat, V_hat, F_true, L_true, Mnor
   V_true <- svd_Mnorm$v            
   
   RV <- procrustes_align(V_hat, V_true)  
-  O_bar <- procrustes_align(U_true, U_bar)
+  O_bar <- procrustes_align(U_bar, U_true)
   
   O_F <- t(O_bar) %*% diag(1/svd_MQMt$d[1:r]) %*% O_bar %*% diag(svd_Mnorm$d[1:r]) %*% t(RV)
     
@@ -184,20 +176,26 @@ compute_rotation_and_covariance_L <- function(U_hat, V_hat, F_true, L_true, Mnor
   R_LQ <- t(solve(B %*% t(RV)))        
   # R_LQ <- t(solve(B)) %*% t(RV) 
   
-  out_term <- t(O_F) %*% diag(svd_Mnorm$d[1:r]) %*% t(V_true) %*% Q
+  Sigma_true <- diag(svd_Mnorm$d[1:r])
+  C_L_base <- TT * Sigma_true %*% t(V_true) %*% Q %*% Sigma_T %*% Q %*% V_true %*% Sigma_true
   
   if (!is.null(ind)) {
-    Sigma_L <- TT * Sigma_C[ind,ind] * out_term %*% Sigma_T %*% t(out_term)
+    C_L <- Sigma_C[ind,ind] * C_L_base
+    Sigma_L <- t(O_F) %*% C_L %*% O_F
+    W_L <- symmetric_matrix_invsqrt(C_L) %*% solve(t(O_F))
   } else {
     Sigma_L   <- vector("list", N)
+    W_L <- vector("list", N)
     for (i in seq_len(N)) {
-      Sigma_L[[i]] <- TT * Sigma_C[i,i] * out_term %*% Sigma_T %*% t(out_term)
+      C_L <- Sigma_C[i,i] * C_L_base
+      Sigma_L[[i]] <- t(O_F) %*% C_L %*% O_F
+      W_L[[i]] <- symmetric_matrix_invsqrt(C_L) %*% solve(t(O_F))
     }
   }
   
 
   
-  list(R_LQ = R_LQ, Sigma_L = Sigma_L)
+  list(R_LQ = R_LQ, Sigma_L = Sigma_L, W_L = W_L)
 }
 
 
@@ -223,21 +221,27 @@ compute_rotation_and_covariance_F <- function(V_hat, F_true, M, Sigma_C, Sigma_T
   # 7. The theoretical covariance for each time t, from Theorem 9:
   #    Σ_{F,t} = [Σ_T]_{t,t} · RV %*% Σ_true^{-1} U_trueᵀ Σ_C U_true Σ_true^{-1} %*% t(RV)
   Sigma_inv   <- diag(1/svd_M$d[1:r])
-  middle_term <- Sigma_inv %*% t(U_true) %*% Sigma_C %*% U_true %*% Sigma_inv
+  C_F_base <- t(U_true) %*% Sigma_C %*% U_true
+  D_F <- RV %*% Sigma_inv
   
   if (!is.null(ind)) {
-    Sigma_F <- Sigma_T[ind,ind] * (RV %*% middle_term %*% t(RV))
+    C_F <- Sigma_T[ind,ind] * C_F_base
+    Sigma_F <- D_F %*% C_F %*% t(D_F)
+    W_F <- symmetric_matrix_invsqrt(C_F) %*% solve(D_F)
   } else {
     Sigma_F   <- vector("list", TT)
+    W_F <- vector("list", TT)
     for (t in seq_len(TT)) {
-      Sigma_F[[t]] <- Sigma_T[t,t] * (RV %*% middle_term %*% t(RV))
+      C_F <- Sigma_T[t,t] * C_F_base
+      Sigma_F[[t]] <- D_F %*% C_F %*% t(D_F)
+      W_F[[t]] <- symmetric_matrix_invsqrt(C_F) %*% solve(D_F)
     }
   }
   
   
   # covariance matrices Σ_{F,t} for t=1,…,T 
   
-  list(R_FQ = R_FQ, Sigma_F = Sigma_F)
+  list(R_FQ = R_FQ, Sigma_F = Sigma_F, W_F = W_F)
 }
 
 
@@ -298,11 +302,12 @@ APCA <- function(X, gamma, r, symmetric = TRUE){
   Times <- ncol(X)
   Q <- diag(gamma, nrow = Times)
   if (symmetric == TRUE){
-    diag(Q[-nrow(Q),-1]) = (1-gamma)
+    if (Times > 1L) Q[cbind(seq_len(Times - 1L), seq.int(2L, Times))] = (1-gamma)
     Q[lower.tri(Q)]  <- t(Q)[lower.tri(Q)]
-    Uhat <- svd(X%*%Q%*%t(X),nu=r)$u
+    XQXt <- X%*%Q%*%t(X)
+    Uhat <- eigen((XQXt+t(XQXt))/2,symmetric=TRUE)$vectors[,seq_len(r),drop=FALSE]
   } else{
-    diag(Q[-nrow(Q),-1]) = (1-gamma)
+    if (Times > 1L) Q[cbind(seq_len(Times - 1L), seq.int(2L, Times))] = (1-gamma)
     Uhat <- svd(X%*%Q%*%t(X),nu=r)$u
   }
   return(Uhat)
@@ -341,7 +346,7 @@ CV_APCA <- function(X, r, p_star = 0.8, grid_len  = 10,  J = 5){
 ratio_based_r <- function(X, R, alpha = 0){
   Times <- ncol(X)
   Q <- diag(0, nrow = Times)
-  diag(Q[-nrow(Q),-1]) = 1
+  if (Times > 1L) Q[cbind(seq_len(Times - 1L), seq.int(2L, Times))] = 1
   svs <- svd(X%*%t(X) + alpha * X%*%Q%*%t(X))$d
   gap_list <- rep(NA, R-1)
   for (j in 1:(R-1)){

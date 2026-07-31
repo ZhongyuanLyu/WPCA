@@ -1,15 +1,12 @@
 generate_signal_panel <- function(N, Times, r = 3L, phi_level = 0.9) {
   B0 <- matrix(0, nrow = r)
-  diagPhivec <- seq(phi_level, phi_level, length.out = r)
-  U_phi <- svd(matrix(stats::rnorm(r * r), nrow = r))$u
-  V_phi <- svd(matrix(stats::rnorm(r * r), nrow = r))$u
-  Phi <- U_phi %*% diag(diagPhivec) %*% t(V_phi)
+  Phi <- diag(phi_level, r)
   sigvare <- diag(1, r, r) - Phi %*% t(Phi)
   Fmat <- VAR1.sim(B0, Phi, Times, sigvare)
   Fmat <- stats::ts(Fmat)
 
   svd_L <- svd(matrix(stats::rnorm(N * r), nrow = N))
-  L <- svd_L$u %*% diag(svd_L$d)
+  L <- 1.2 * svd_L$u %*% diag(svd_L$d)
   M <- L %*% t(Fmat)
 
   list(
@@ -19,6 +16,14 @@ generate_signal_panel <- function(N, Times, r = 3L, phi_level = 0.9) {
     U_true = svd(M, nu = r)$u,
     V_true = svd(M, nv = r)$v
   )
+}
+
+symmetric_matrix_invsqrt <- function(A) {
+  eig <- eigen((A + t(A)) / 2, symmetric = TRUE)
+  if (min(eig$values) <= 0) {
+    stop("The covariance matrix must be positive definite.")
+  }
+  eig$vectors %*% diag(1 / sqrt(eig$values), nrow = nrow(A)) %*% t(eig$vectors)
 }
 
 draw_sigma_c <- function(N, rho = 0.6, covariance = c("offdiag", "diagonal", "isotropic")) {
@@ -34,7 +39,7 @@ draw_sigma_c <- function(N, rho = 0.6, covariance = c("offdiag", "diagonal", "is
 
 make_weight_matrix <- function(Times, gamma, symmetric = TRUE) {
   Q <- diag(gamma, nrow = Times)
-  diag(Q[-nrow(Q), -1]) <- 1 - gamma
+  if (Times > 1L) Q[cbind(seq_len(Times - 1L), seq.int(2L, Times))] <- 1 - gamma
   if (symmetric) {
     Q[lower.tri(Q)] <- t(Q)[lower.tri(Q)]
   }
@@ -53,17 +58,17 @@ simulate_estimation_errors <- function(N, Times, rho, covariance, N_rep = 100L, 
     U_HPCA <- heteroPCA(X, r, 10)
     U_APCA <- CV_APCA(X, r, p_star = 0.8, J = 10)$U
 
-    err_res[ii, 1] <- sqrt(sum((U_PCA %*% t(U_PCA) - signal$U_true %*% t(signal$U_true))^2) / sqrt(r))
-    err_res[ii, 2] <- sqrt(sum((U_HPCA %*% t(U_HPCA) - signal$U_true %*% t(signal$U_true))^2) / sqrt(r))
-    err_res[ii, 3] <- sqrt(sum((U_APCA %*% t(U_APCA) - signal$U_true %*% t(signal$U_true))^2) / sqrt(r))
+    err_res[ii, 1] <- sqrt(sum((U_PCA %*% t(U_PCA) - signal$U_true %*% t(signal$U_true))^2))
+    err_res[ii, 2] <- sqrt(sum((U_HPCA %*% t(U_HPCA) - signal$U_true %*% t(signal$U_true))^2))
+    err_res[ii, 3] <- sqrt(sum((U_APCA %*% t(U_APCA) - signal$U_true %*% t(signal$U_true))^2))
 
     V_PCA <- svd(U_PCA %*% t(U_PCA) %*% X, nu = r, nv = r)$v
     V_HPCA <- svd(U_HPCA %*% t(U_HPCA) %*% X, nu = r, nv = r)$v
     V_APCA <- svd(U_APCA %*% t(U_APCA) %*% X, nu = r, nv = r)$v
 
-    err_res[ii, 4] <- sqrt(sum((V_PCA %*% t(V_PCA) - signal$V_true %*% t(signal$V_true))^2) / sqrt(r))
-    err_res[ii, 5] <- sqrt(sum((V_HPCA %*% t(V_HPCA) - signal$V_true %*% t(signal$V_true))^2) / sqrt(r))
-    err_res[ii, 6] <- sqrt(sum((V_APCA %*% t(V_APCA) - signal$V_true %*% t(signal$V_true))^2) / sqrt(r))
+    err_res[ii, 4] <- sqrt(sum((V_PCA %*% t(V_PCA) - signal$V_true %*% t(signal$V_true))^2))
+    err_res[ii, 5] <- sqrt(sum((V_HPCA %*% t(V_HPCA) - signal$V_true %*% t(signal$V_true))^2))
+    err_res[ii, 6] <- sqrt(sum((V_APCA %*% t(V_APCA) - signal$V_true %*% t(signal$V_true))^2))
   }
   err_res
 }
@@ -117,15 +122,15 @@ simulate_cv_selection <- function(N, Times, rho, covariance, N_rep = 100L, r = 3
     true_err <- rep(NA_real_, length(gamma_list))
     for (j in seq_along(gamma_list)) {
       Ugammahat_j <- APCA(X, gamma_list[j], r)
-      true_err[j] <- sqrt(sum((Ugammahat_j %*% t(Ugammahat_j) - signal$U_true %*% t(signal$U_true))^2) / sqrt(r))
+      true_err[j] <- sqrt(sum((Ugammahat_j %*% t(Ugammahat_j) - signal$U_true %*% t(signal$U_true))^2))
     }
 
     ind_true <- order(true_err)[1:5]
     ind_bad <- order(true_err)[8:10]
 
-    err_res[ii, 1] <- sqrt(sum((U_PCA %*% t(U_PCA) - signal$U_true %*% t(signal$U_true))^2) / sqrt(r))
-    err_res[ii, 2] <- sqrt(sum((U_HPCA %*% t(U_HPCA) - signal$U_true %*% t(signal$U_true))^2) / sqrt(r))
-    err_res[ii, 3] <- sqrt(sum((U_APCA %*% t(U_APCA) - signal$U_true %*% t(signal$U_true))^2) / sqrt(r))
+    err_res[ii, 1] <- sqrt(sum((U_PCA %*% t(U_PCA) - signal$U_true %*% t(signal$U_true))^2))
+    err_res[ii, 2] <- sqrt(sum((U_HPCA %*% t(U_HPCA) - signal$U_true %*% t(signal$U_true))^2))
+    err_res[ii, 3] <- sqrt(sum((U_APCA %*% t(U_APCA) - signal$U_true %*% t(signal$U_true))^2))
     err_res[ii, 4] <- true_err[ind_true[1]]
     err_res[ii, 5] <- APCA_res$gamma
     err_res[ii, 6:10] <- gamma_list[ind_true]
@@ -191,7 +196,7 @@ simulate_loading_distribution <- function(N, Times, rho = 0.6, gamma = 0, N_rep 
       ind
     )
     LRes <- svd_nUUtX$u %*% diag(svd_nUUtX$d[1:r]) - signal$L %*% rotation_cov$R_LQ
-    LResnorm[, ii] <- LRes[ind, ] %*% solve(expm::sqrtm(rotation_cov$Sigma_L))
+    LResnorm[, ii] <- LRes[ind, ] %*% t(rotation_cov$W_L)
   }
 
   LResnorm
@@ -217,10 +222,23 @@ simulate_factor_distribution <- function(N, Times, rho = 0.6, gamma = 0, N_rep =
       ind
     )
     FRes <- sqrt(Times) * V_WPCA - signal$Fmat %*% rotation_cov$R_FQ
-    FResnorm[, ii] <- solve(expm::sqrtm(rotation_cov$Sigma_F)) %*% FRes[ind, ]
+    FResnorm[, ii] <- rotation_cov$W_F %*% FRes[ind, ]
   }
 
   FResnorm
+}
+
+summarize_normalized_coordinate <- function(x, label) {
+  z <- as.numeric(x[1, ])
+  data.frame(
+    method = label,
+    mean = mean(z),
+    median = stats::median(z),
+    sd = stats::sd(z),
+    q025 = unname(stats::quantile(z, 0.025)),
+    q975 = unname(stats::quantile(z, 0.975)),
+    qq_correlation = stats::cor(sort(z), stats::qnorm(stats::ppoints(length(z))))
+  )
 }
 
 plot_qq <- function(x, title_text, y_label) {
@@ -257,9 +275,10 @@ plot_hist_standardized <- function(x, title_text, x_label) {
   ggplot2::ggplot(data.frame(EstimationError = x), ggplot2::aes(x = EstimationError)) +
     ggplot2::geom_histogram(mapping = hist_mapping, bins = 12, fill = "royalblue3", color = "white") +
     stat_function_layer +
-    ggplot2::labs(title = title_text, x = x_label, y = "Frequency") +
+    ggplot2::labs(title = title_text, x = x_label, y = "Density") +
     ggplot2::theme_minimal(base_size = 30) +
     ggplot2::theme(
+      plot.title = ggplot2::element_text(size = 24),
       panel.border = ggplot2::element_rect(color = "black", fill = NA),
       panel.background = ggplot2::element_blank()
     )

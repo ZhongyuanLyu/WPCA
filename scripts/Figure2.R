@@ -52,16 +52,20 @@ work_script <- file.path(work_dir, basename(source_script))
 
 file.copy(source_script, work_script, overwrite = TRUE)
 
-cmd_out <- system2(
-  rscript_path,
-  c(normalizePath(work_script, winslash = "/"), as.character(n_rep), as.character(seed)),
-  stdout = TRUE,
-  stderr = TRUE
+old_wd <- setwd(work_dir)
+cmd_out <- tryCatch(
+  system2(
+    rscript_path,
+    c(basename(work_script), as.character(n_rep), as.character(seed)),
+    stdout = TRUE,
+    stderr = TRUE
+  ),
+  finally = setwd(old_wd)
 )
 status <- attr(cmd_out, "status")
 if (!is.null(status) && status != 0) {
   cat(cmd_out, sep = "\n")
-  stop("Figure2.R failed while running the preserved revision script.")
+  stop("Figure2.R failed while running the corrected revision script.")
 }
 
 fig_dir <- get_output_dir(repo_root, "figs")

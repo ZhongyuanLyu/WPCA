@@ -1,2 +1,5 @@
 outputs/
 **/.Rhistory
+.DS_Store
+original/revision_figure2/*.png
+original/revision_figure2/*.csv

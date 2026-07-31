@@ -226,12 +226,12 @@ plot_interpretive_figure <- function(md_gamma, qd_gamma, md_dates, md_series, qd
 
   graphics::plot(md_gamma$date, md_gamma$gamma, type = "b", pch = 16, col = "#C44536", lwd = 2.2,
                  ylim = c(-0.02, 1.02), xlab = "", ylab = expression(hat(gamma)),
-                 main = "FRED-MD: Rolling Selected Gamma", bty = "l")
+                 main = "FRED-MD: Expanding-Window Selected Gamma", bty = "l")
   graphics::abline(h = 1, lty = 2, col = "#666666")
 
   graphics::plot(qd_gamma$date, qd_gamma$gamma, type = "b", pch = 16, col = "#C44536", lwd = 2.2,
                  ylim = c(-0.02, 1.02), xlab = "", ylab = expression(hat(gamma)),
-                 main = "FRED-QD: Rolling Selected Gamma", bty = "l")
+                 main = "FRED-QD: Expanding-Window Selected Gamma", bty = "l")
   graphics::abline(h = 1, lty = 2, col = "#666666")
 
   md_factor_plot <- clip_for_plot(smooth_for_plot(md_series$factor, 12))
@@ -290,8 +290,8 @@ build_interpretive_outputs <- function(data_dir) {
   qd_factor_pca <- align_sign(zscore(qd_pca$score), qd_activity)
 
   list(
-    md_gamma = select_gamma_path(md_scaled$X, md$dates, horizon_step = 12L, n_windows = 8L, min_train = 120L),
-    qd_gamma = select_gamma_path(qd_scaled$X, qd$dates, horizon_step = 4L, n_windows = 8L, min_train = 60L),
+    md_gamma = select_gamma_path(md_scaled$X, md$dates, horizon_step = 24L, n_windows = 10L, min_train = 240L),
+    qd_gamma = select_gamma_path(qd_scaled$X, qd$dates, horizon_step = 8L, n_windows = 10L, min_train = 80L),
     md_dates = md$dates,
     qd_dates = qd$dates,
     md_series = list(factor = md_factor, activity = md_activity, slack = md_slack),

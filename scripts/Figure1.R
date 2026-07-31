@@ -49,19 +49,27 @@ source(file.path(repo_root, "R", "functions.R"))
 source(file.path(repo_root, "R", "simulation_core.R"))
 
 fig_dir <- get_output_dir(repo_root, "figs")
+table_dir <- get_output_dir(repo_root, "tables")
 
 set.seed(seed)
 pca_dist <- simulate_loading_distribution(N = 100L, Times = 800L, rho = 0.6, gamma = 1, N_rep = n_rep)
 set.seed(seed)
 wpca_dist <- simulate_loading_distribution(N = 100L, Times = 800L, rho = 0.6, gamma = 0, N_rep = n_rep)
 
-p_pca <- plot_hist_standardized(pca_dist[3, ], "Histogram of Loading Errors", "Estimation Error")
-p_wpca <- plot_hist_standardized(wpca_dist[3, ], "Histogram of Loading Errors", "Estimation Error")
+p_pca <- plot_hist_standardized(pca_dist[1, ], "Histogram of Loading Errors", "Estimation Error")
+p_wpca <- plot_hist_standardized(wpca_dist[1, ], "Histogram of Loading Errors", "Estimation Error")
 
 file_pca <- file.path(fig_dir, "sim_inf_L_PCA_N100_T800_hist.png")
 file_wpca <- file.path(fig_dir, "sim_inf_L_N100_T800_hist.png")
+summary_file <- file.path(table_dir, "Figure1_loading_error_summary.csv")
 
 ggplot2::ggsave(file_pca, p_pca, width = 6, height = 6, dpi = 300)
 ggplot2::ggsave(file_wpca, p_wpca, width = 6, height = 6, dpi = 300)
 
-report_saved_files(c(file_pca, file_wpca))
+summary_df <- rbind(
+  summarize_normalized_coordinate(pca_dist, "PCA"),
+  summarize_normalized_coordinate(wpca_dist, "WPCA")
+)
+utils::write.csv(summary_df, summary_file, row.names = FALSE)
+
+report_saved_files(c(file_pca, file_wpca, summary_file))

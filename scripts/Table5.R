@@ -44,7 +44,7 @@ source(file.path(repo_root, "R", "functions.R"))
 source(file.path(repo_root, "R", "fred_core.R"))
 
 args <- commandArgs(trailingOnly = TRUE)
-mode <- if (length(args) && args[1] %in% c("cached", "recompute")) args[1] else "cached"
+mode <- if (length(args) && args[1] %in% c("cached", "recompute")) args[1] else "recompute"
 
 if (mode == "cached") {
   cache_dir <- file.path(repo_root, "original", "codes")
