@@ -79,7 +79,7 @@ script_runs <- switch(
 
 cat("run_all_paper_outputs.R mode:", mode, "\n")
 if (mode == "quick") {
-  cat("quick mode is a smoke test and overwrites the same output files. Rerun paper mode before archiving outputs.\n")
+  cat("quick mode checks the pipeline and overwrites the same output files. Rerun paper mode to regenerate the full-replication outputs.\n")
 }
 
 for (script_run in script_runs) {

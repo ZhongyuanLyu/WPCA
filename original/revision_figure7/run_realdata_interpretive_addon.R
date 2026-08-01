@@ -1,6 +1,6 @@
 #!/usr/bin/env Rscript
 
-# Interpretive real-data add-on:
+# Real-data analysis for manuscript Figure 3:
 # 1) rolling selected gamma path
 # 2) first-factor alignment with key macro series
 # 3) correlation summary for AdaWPCA vs PCA

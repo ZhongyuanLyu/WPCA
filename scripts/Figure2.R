@@ -65,7 +65,7 @@ cmd_out <- tryCatch(
 status <- attr(cmd_out, "status")
 if (!is.null(status) && status != 0) {
   cat(cmd_out, sep = "\n")
-  stop("Figure2.R failed while running the corrected revision script.")
+  stop("Figure2.R failed while running the Figure 2 source script.")
 }
 
 fig_dir <- get_output_dir(repo_root, "figs")
