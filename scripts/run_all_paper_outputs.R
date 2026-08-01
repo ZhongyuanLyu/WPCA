@@ -34,7 +34,7 @@ locate_repo_root <- function() {
       return(cand)
     }
   }
-  stop("Cannot locate the replication package root. Run the script from the package root, the scripts directory, or via Rscript.")
+  stop("Cannot locate the repository root.")
 }
 
 repo_root <- locate_repo_root()
@@ -57,7 +57,7 @@ script_runs <- switch(
     list(name = "Figure6.R", args = character()),
     list(name = "Figure7.R", args = c("20260315")),
     list(name = "Table2.R", args = c("100", "1234")),
-    list(name = "Table3.R", args = c("recompute", "100", "1234")),
+    list(name = "Table3.R", args = c("100", "1234")),
     list(name = "Table4.R", args = c("recompute", "100", "1234")),
     list(name = "Table5.R", args = c("recompute", "100", "1234"))
   ),
@@ -70,7 +70,7 @@ script_runs <- switch(
     list(name = "Figure6.R", args = c("75", "1234")),
     list(name = "Figure7.R", args = c("20260315")),
     list(name = "Table2.R", args = c("2", "1234")),
-    list(name = "Table3.R", args = c("recompute", "2", "1234")),
+    list(name = "Table3.R", args = c("2", "1234")),
     list(name = "Table4.R", args = c("recompute", "2", "1234")),
     list(name = "Table5.R", args = c("recompute", "2", "1234"))
   ),
@@ -79,18 +79,18 @@ script_runs <- switch(
 
 cat("run_all_paper_outputs.R mode:", mode, "\n")
 if (mode == "quick") {
-  cat("quick mode checks the pipeline and overwrites the same output files. Rerun paper mode to regenerate the full-replication outputs.\n")
+  cat("quick mode uses fewer replications and overwrites the same output files. Rerun paper mode to regenerate the outputs with the full simulation settings.\n")
 }
 
 for (script_run in script_runs) {
   script_name <- script_run$name
   script_file <- file.path("scripts", script_name)
   run_args <- c(script_file, script_run$args)
-  cat("Running", script_name)
   if (length(script_run$args)) {
-    cat("with args:", paste(script_run$args, collapse = " "))
+    cat("Running ", script_name, " with args: ", paste(script_run$args, collapse = " "), "...\n", sep = "")
+  } else {
+    cat("Running ", script_name, "...\n", sep = "")
   }
-  cat("...\n")
   out <- system2(rscript_path, run_args, stdout = TRUE, stderr = TRUE)
   status <- attr(out, "status")
   if (!is.null(status) && status != 0) {

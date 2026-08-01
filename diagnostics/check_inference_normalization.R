@@ -1,7 +1,6 @@
 #!/usr/bin/env Rscript
 
-# Diagnostic only: compare the current rotation convention with the convention
-# in Theorems 7--8. Run from the replication-package root.
+# Checks the normalization used in Theorems 7--8.
 
 source(file.path("R", "functions.R"))
 source(file.path("R", "simulation_core.R"))

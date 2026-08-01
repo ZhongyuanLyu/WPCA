@@ -34,7 +34,7 @@ locate_repo_root <- function() {
       return(cand)
     }
   }
-  stop("Cannot locate the replication package root. Run the script from the package root, the scripts directory, or via Rscript.")
+  stop("Cannot locate the repository root.")
 }
 
 repo_root <- locate_repo_root()

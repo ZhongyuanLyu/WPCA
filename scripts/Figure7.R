@@ -34,7 +34,7 @@ locate_repo_root <- function() {
       return(cand)
     }
   }
-  stop("Cannot locate the replication package root. Run the script from the package root, the scripts directory, or via Rscript.")
+  stop("Cannot locate the repository root.")
 }
 
 repo_root <- locate_repo_root()
@@ -47,7 +47,7 @@ args <- commandArgs(trailingOnly = TRUE)
 seed <- get_int_arg(args, 1, 20260315L)
 set.seed(seed)
 
-data_dir <- file.path(repo_root, "original", "codes")
+data_dir <- file.path(repo_root, "data")
 res <- build_interpretive_outputs(data_dir = data_dir)
 
 gamma_summary <- data.frame(
@@ -72,10 +72,10 @@ plot_interpretive_figure(
   out_file = fig_file
 )
 
-md_gamma_file <- file.path(table_dir, "Figure7_FRED_MD_gamma_path.csv")
-qd_gamma_file <- file.path(table_dir, "Figure7_FRED_QD_gamma_path.csv")
-gamma_summary_file <- file.path(table_dir, "Figure7_gamma_summary.csv")
-corr_file <- file.path(table_dir, "Figure7_factor_macro_correlations.csv")
+md_gamma_file <- file.path(table_dir, "fred_md_gamma_path.csv")
+qd_gamma_file <- file.path(table_dir, "fred_qd_gamma_path.csv")
+gamma_summary_file <- file.path(table_dir, "fred_gamma_summary.csv")
+corr_file <- file.path(table_dir, "fred_factor_macro_correlations.csv")
 
 utils::write.csv(res$md_gamma, md_gamma_file, row.names = FALSE)
 utils::write.csv(res$qd_gamma, qd_gamma_file, row.names = FALSE)

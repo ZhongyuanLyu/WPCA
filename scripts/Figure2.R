@@ -34,7 +34,7 @@ locate_repo_root <- function() {
       return(cand)
     }
   }
-  stop("Cannot locate the replication package root. Run the script from the package root, the scripts directory, or via Rscript.")
+  stop("Cannot locate the repository root.")
 }
 
 repo_root <- locate_repo_root()
@@ -45,12 +45,14 @@ args <- commandArgs(trailingOnly = TRUE)
 n_rep <- get_int_arg(args, 1, 300L)
 seed <- get_int_arg(args, 2, 20260315L)
 
-source_script <- file.path(repo_root, "original", "revision_figure2", "run_uv_v4_spd_noise.R")
+source_script <- file.path(repo_root, "scripts", "Figure2_simulation.R")
 rscript_path <- get_rscript_path()
 work_dir <- ensure_dir(file.path(repo_root, "outputs", "tmp", "figure2_work"))
 work_script <- file.path(work_dir, basename(source_script))
 
-file.copy(source_script, work_script, overwrite = TRUE)
+if (!file.copy(source_script, work_script, overwrite = TRUE)) {
+  stop("Could not prepare the Figure 2 simulation script.")
+}
 
 old_wd <- setwd(work_dir)
 cmd_out <- tryCatch(

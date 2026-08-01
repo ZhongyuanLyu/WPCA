@@ -34,7 +34,7 @@ locate_repo_root <- function() {
       return(cand)
     }
   }
-  stop("Cannot locate the replication package root. Run the script from the package root, the scripts directory, or via Rscript.")
+  stop("Cannot locate the repository root.")
 }
 
 repo_root <- locate_repo_root()
@@ -47,7 +47,7 @@ args <- commandArgs(trailingOnly = TRUE)
 mode <- if (length(args) && args[1] %in% c("cached", "recompute")) args[1] else "recompute"
 
 if (mode == "cached") {
-  cache_dir <- file.path(repo_root, "original", "codes")
+  cache_dir <- file.path(repo_root, "data", "cache")
   datasets <- c("FRED-MD" = "", "FRED-QD" = "qd_")
   rows <- list()
   idx <- 1L
@@ -76,7 +76,7 @@ if (mode == "cached") {
   seed <- get_int_arg(args, 3, 1234L)
   set.seed(seed)
   table5 <- build_fred_reconstruction_table(
-    data_dir = file.path(repo_root, "original", "codes"),
+    data_dir = file.path(repo_root, "data"),
     ranks = 1:3,
     train_ratios = c(0.7, 0.8, 0.9),
     n_rep = n_rep

@@ -1,6 +1,6 @@
 #!/usr/bin/env Rscript
 
-# v4 simulation package (strict SPD-noise form):
+# Simulation for Figure 2 under separable SPD noise:
 #   E = Sigma_C^{1/2} Z Sigma_T^{1/2}
 # with Z i.i.d. entries.
 #
@@ -180,7 +180,7 @@ simulate_panel <- function(cfg, T) {
     stop("The simulated lag-1 signal matrix is not positive definite.")
   }
 
-  # simulation_est.R-aligned loading DGP
+  # Loading design used in the estimation simulations
   svd_L <- svd(matrix(rnorm(N * r), nrow = N))
   L <- svd_L$u %*% diag(svd_L$d, nrow = r, ncol = r)
 
@@ -299,7 +299,7 @@ plot_error_lines <- function(summary_df, out_file) {
   }
 }
 
-# Tuning-ready defaults (at least 5 T points per line)
+# Settings used for Figure 2
 scenarios <- list(
   gaussian_noise = list(
     description = "Gaussian i.i.d. Z with SPD Sigma_C and Sigma_T = I",

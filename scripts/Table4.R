@@ -34,7 +34,7 @@ locate_repo_root <- function() {
       return(cand)
     }
   }
-  stop("Cannot locate the replication package root. Run the script from the package root, the scripts directory, or via Rscript.")
+  stop("Cannot locate the repository root.")
 }
 
 repo_root <- locate_repo_root()
@@ -47,7 +47,7 @@ args <- commandArgs(trailingOnly = TRUE)
 mode <- if (length(args) && args[1] %in% c("cached", "recompute")) args[1] else "recompute"
 
 if (mode == "cached") {
-  cache_dir <- file.path(repo_root, "original", "codes")
+  cache_dir <- file.path(repo_root, "data", "cache")
   load_res_list <- function(file) {
     env <- new.env(parent = emptyenv())
     load(file, envir = env)
