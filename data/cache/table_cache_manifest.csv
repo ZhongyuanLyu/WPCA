@@ -1,0 +1,3 @@
+"Table","CacheVersion","ImplementationVersion","File","MD5","Rows","Columns"
+"Table4","1","table4-paper-cache","Table4_sim_cv.csv","bf1ccf4116e0204cc1c0946f4f1cfca4",16,"Scenario|N|T|Top3|NonBottom3"
+"Table5","1","table5-paper-cache","Table5_fred_reconstruction.csv","d6100bdda4070947ee2ebd8f1e199840",54,"Dataset|Rank|q_tr|Method|MeanError"
